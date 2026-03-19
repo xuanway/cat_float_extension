@@ -1,0 +1,21 @@
+{
+    "manifest_version": 3,
+    "name": "全网页互动猫咪浮窗",
+    "version": "1.0",
+    "description": "打开任意网页都出现的互动猫咪，点击摸头有动画，可自由拖动",
+    "icons": {
+        "16": "icons/cat16.png",
+        "48": "icons/cat48.png",
+        "128": "icons/cat128.png"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "css": ["content.css"],
+            "js": ["content.js"],
+            "run_at": "document_end",
+            "all_frames": false
+        }
+    ],
+    "permissions": []
+}
