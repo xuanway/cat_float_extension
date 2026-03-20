@@ -30,7 +30,7 @@ if (!window.hasInitedGlobalCat) {
     const heartBox = document.getElementById('global-heart-box');
     const eyes = document.querySelectorAll('.global-cat-eye');
 
-    // 预加载语音列表，便于优先选择日语女声
+    // 预加载语音列表，便于优先选择英语女声
     window.speechSynthesis?.getVoices();
     window.speechSynthesis?.addEventListener('voiceschanged', () => {
         window.speechSynthesis.getVoices();
@@ -114,7 +114,7 @@ if (!window.hasInitedGlobalCat) {
         // 生成爱心特效
         createHeart();
 
-        // 播放鼓励语音（日语二次元女生风格）
+        // 播放鼓励语音（英语二次元少女风格，每五次换一句）
         playCheerVoice();
     });
 
@@ -127,27 +127,47 @@ if (!window.hasInitedGlobalCat) {
         setTimeout(() => heart.remove(), 1200);
     }
 
-    // 优先选择日语女声；如果不可用则回退到日语语音
-    function pickJapaneseFemaleVoice() {
+    // 鼓励语池 —— 读取 phrases.js 中的 365 句语录
+    // 如需自定义语句，请直接编辑 phrases.js，无需改动此文件
+    const CHEER_PHRASES = window.CAT_CHEER_PHRASES || ["You can do it! Keep going~!"];
+
+    // 点击计数器：每点击 5 次推进到下一句（跨页面刷新用 sessionStorage 保持）
+    let clickCount = parseInt(sessionStorage.getItem('catClickCount') || '0', 10);
+    let phraseIndex = parseInt(sessionStorage.getItem('catPhraseIndex') || '0', 10);
+
+    function getNextPhrase() {
+        clickCount += 1;
+        sessionStorage.setItem('catClickCount', clickCount);
+        // 每满 5 次切换到下一句
+        if (clickCount % 5 === 0) {
+            phraseIndex = (phraseIndex + 1) % CHEER_PHRASES.length;
+            sessionStorage.setItem('catPhraseIndex', phraseIndex);
+        }
+        return CHEER_PHRASES[phraseIndex];
+    }
+
+    // 优先选择英语女声（二次元少女风）
+    function pickEnglishFemaleVoice() {
         if (!window.speechSynthesis) return null;
         const voices = window.speechSynthesis.getVoices();
-        const japaneseVoices = voices.filter(v => /^ja([-_]|$)/i.test(v.lang));
-        if (!japaneseVoices.length) return null;
+        const enVoices = voices.filter(v => /^en([-_]|$)/i.test(v.lang));
+        if (!enVoices.length) return null;
 
-        const femaleHints = /(female|woman|girl|jp|japan|kyoko|nanami|haruka|sakura|sayaka|mei|yui|microsoft ayumi|google 日本語)/i;
-        return japaneseVoices.find(v => femaleHints.test(v.name)) || japaneseVoices[0];
+        // 按优先级匹配女声关键词
+        const femaleHints = /zira|samantha|google\s+uk\s+english\s+female|google\s+us\s+english(?!\s+male)|aria|jenny|sonia|susan|hazel|moira|tessa|fiona|allison|ava|veena|karen|female|woman|girl/i;
+        return enVoices.find(v => femaleHints.test(v.name)) || enVoices[0];
     }
 
     function playCheerVoice() {
         if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== 'function') return;
 
-        const utterance = new SpeechSynthesisUtterance('がんばって、君ならできるよ。');
-        utterance.lang = 'ja-JP';
-        utterance.rate = 1.08;
-        utterance.pitch = 1.32;
+        const utterance = new SpeechSynthesisUtterance(getNextPhrase());
+        utterance.lang = 'en-US';
+        utterance.rate = 1.0;    // 正常语速
+        utterance.pitch = 1.45;  // 偏高音调，接近二次元女声
         utterance.volume = 1;
 
-        const voice = pickJapaneseFemaleVoice();
+        const voice = pickEnglishFemaleVoice();
         if (voice) utterance.voice = voice;
 
         // 避免快速连点导致语音堆叠
