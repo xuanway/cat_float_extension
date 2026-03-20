@@ -30,6 +30,12 @@ if (!window.hasInitedGlobalCat) {
     const heartBox = document.getElementById('global-heart-box');
     const eyes = document.querySelectorAll('.global-cat-eye');
 
+    // 预加载语音列表，便于优先选择日语女声
+    window.speechSynthesis?.getVoices();
+    window.speechSynthesis?.addEventListener('voiceschanged', () => {
+        window.speechSynthesis.getVoices();
+    });
+
     // 3. 拖动逻辑（带屏幕边界限制，不会拖出屏幕）
     let isDragging = false;
     let offsetX = 0;
@@ -107,6 +113,9 @@ if (!window.hasInitedGlobalCat) {
 
         // 生成爱心特效
         createHeart();
+
+        // 播放鼓励语音（日语二次元女生风格）
+        playCheerVoice();
     });
 
     // 生成爱心函数
@@ -116,6 +125,34 @@ if (!window.hasInitedGlobalCat) {
         heartBox.appendChild(heart);
         // 动画结束后移除元素，避免DOM堆积
         setTimeout(() => heart.remove(), 1200);
+    }
+
+    // 优先选择日语女声；如果不可用则回退到日语语音
+    function pickJapaneseFemaleVoice() {
+        if (!window.speechSynthesis) return null;
+        const voices = window.speechSynthesis.getVoices();
+        const japaneseVoices = voices.filter(v => /^ja([-_]|$)/i.test(v.lang));
+        if (!japaneseVoices.length) return null;
+
+        const femaleHints = /(female|woman|girl|jp|japan|kyoko|nanami|haruka|sakura|sayaka|mei|yui|microsoft ayumi|google 日本語)/i;
+        return japaneseVoices.find(v => femaleHints.test(v.name)) || japaneseVoices[0];
+    }
+
+    function playCheerVoice() {
+        if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== 'function') return;
+
+        const utterance = new SpeechSynthesisUtterance('がんばって、君ならできるよ。');
+        utterance.lang = 'ja-JP';
+        utterance.rate = 1.08;
+        utterance.pitch = 1.32;
+        utterance.volume = 1;
+
+        const voice = pickJapaneseFemaleVoice();
+        if (voice) utterance.voice = voice;
+
+        // 避免快速连点导致语音堆叠
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
     }
 
     // 6. 移动端触摸兼容（手机端可拖动、可点击）
@@ -160,6 +197,7 @@ if (!window.hasInitedGlobalCat) {
             catBody.classList.add('touch');
             setTimeout(() => catBody.classList.remove('touch'), 600);
             createHeart();
+            playCheerVoice();
         }
         isDragging = false;
     });
